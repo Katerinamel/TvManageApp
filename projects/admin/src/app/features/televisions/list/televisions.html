@@ -1,0 +1,49 @@
+<div class="page-heading">
+        <div>
+          <p class="eyebrow">УПРАВЛЕНИЕ УСТРОЙСТВАМИ</p>
+          <h1>Телевизоры</h1>
+          <p class="subtitle">Выберите экран, чтобы настроить плейлисты и трансляцию.</p>
+        </div>
+        <a nz-button nzType="primary" nzSize="large" routerLink="/televisions/connect">
+          + Добавить телевизор
+        </a>
+      </div>
+
+      <section class="panel devices-panel">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">ПОДКЛЮЧЁННЫЕ ЭКРАНЫ</p>
+            <h2>Ваши телевизоры</h2>
+          </div>
+          <button nz-button nzType="text" (click)="refreshTelevisions()">Обновить</button>
+        </div>
+
+        @if (televisionsError()) {
+          <p class="form-message error">{{ televisionsError() }}</p>
+        } @else if (televisionsLoading()) {
+          <div class="loading-state">Загружаем телевизоры…</div>
+        } @else if (televisions().length) {
+          <div class="device-list">
+            @for (television of televisions(); track television.id) {
+              <a class="device-card" [routerLink]="['/televisions', television.id]">
+                <div class="screen-icon small">▣</div>
+                <div>
+                  <h3>{{ television.name }}</h3>
+                  <p>
+                    <span class="online-dot" [class.off]="television.broadcastEnabled === false"></span>
+                    {{ television.broadcastEnabled === false ? 'Трансляция выключена' : 'Трансляция включена' }}
+                  </p>
+                </div>
+                <span class="open-device">Управлять →</span>
+              </a>
+            }
+          </div>
+        } @else {
+          <div class="empty-state compact">
+            <div class="screen-icon">▣</div>
+            <h2>Пока нет подключённых телевизоров</h2>
+            <p>Откройте Player, получите шестизначный код и добавьте первый телевизор.</p>
+            <a nz-button nzType="primary" routerLink="/televisions/connect">Добавить телевизор</a>
+          </div>
+        }
+      </section>

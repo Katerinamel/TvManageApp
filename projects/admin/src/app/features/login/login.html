@@ -1,0 +1,52 @@
+<main class="login-page">
+  <section class="login-card">
+    <div class="brand"><span>TV</span> TvManageApp</div>
+    <p class="eyebrow">АДМИНИСТРАТИВНАЯ ПАНЕЛЬ</p>
+    <h1>Вход в систему</h1>
+    <p class="subtitle">Используйте данные мастер-аккаунта Firebase.</p>
+
+    @if (errorMessage()) {
+      <nz-alert nzType="error" [nzMessage]="errorMessage()" nzShowIcon />
+    }
+
+    <form nz-form nzLayout="vertical" [formGroup]="form" (ngSubmit)="submit()">
+      <nz-form-item>
+        <nz-form-label nzRequired>Email</nz-form-label>
+        <nz-form-control nzErrorTip="Введите корректный email">
+          <input
+            nz-input
+            formControlName="email"
+            type="email"
+            autocomplete="username"
+            placeholder="admin@example.com"
+          />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label nzRequired>Пароль</nz-form-label>
+        <nz-form-control nzErrorTip="Введите пароль">
+          <input
+            nz-input
+            formControlName="password"
+            type="password"
+            autocomplete="current-password"
+            placeholder="••••••••"
+          />
+        </nz-form-control>
+      </nz-form-item>
+
+      <button
+        nz-button
+        nzType="primary"
+        nzSize="large"
+        [nzLoading]="submitting()"
+        [disabled]="submitting()"
+      >
+        Войти
+      </button>
+    </form>
+
+    <p class="hint">Регистрация отключена. Аккаунт создаётся администратором проекта.</p>
+  </section>
+</main>

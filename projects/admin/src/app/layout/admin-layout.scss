@@ -1,0 +1,50 @@
+:host { display: block; min-height: 100vh; }
+.shell { min-height: 100vh; }
+.sidebar { padding: 24px 16px; background: #111827; }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 8px 34px;
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+}
+.brand-mark {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 9px;
+  background: #1677ff;
+  font-size: 13px;
+}
+nav { display: grid; gap: 6px; }
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border-radius: 8px;
+  color: #9ca3af;
+}
+.nav-item.active { color: white; background: #1f2937; }
+.nav-item.disabled { cursor: default; opacity: .72; }
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 20px;
+  padding: 0 32px;
+  border-bottom: 1px solid #e5e7eb;
+  background: white;
+}
+.environment { color: #6b7280; font-size: 13px; }
+.content { padding: 44px 48px; background: #f5f7fa; }
+@media (max-width: 1200px) {
+  .sidebar { display: none; }
+  .content { padding: 36px 28px; }
+}
+@media (max-width: 900px) {
+  .content { padding: 30px 20px; }
+}

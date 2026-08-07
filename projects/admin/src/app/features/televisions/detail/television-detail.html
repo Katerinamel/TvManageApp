@@ -1,0 +1,202 @@
+@if (pageLoading()) {
+        <div class="television-skeleton" aria-label="Загружаем телевизор" aria-busy="true">
+          <div class="skeleton-page-heading">
+            <span class="skeleton-line skeleton-back"></span>
+            <span class="skeleton-line skeleton-eyebrow"></span>
+            <span class="skeleton-line skeleton-title"></span>
+            <span class="skeleton-line skeleton-subtitle"></span>
+          </div>
+
+          <section class="content-panel detail-panel skeleton-panel">
+            <div class="skeleton-panel-heading">
+              <div class="skeleton-panel-copy">
+                <span class="skeleton-line skeleton-eyebrow"></span>
+                <span class="skeleton-line skeleton-section-title"></span>
+                <span class="skeleton-line skeleton-status"></span>
+              </div>
+              <div class="skeleton-actions">
+                <span class="skeleton-button skeleton-button-small"></span>
+                <span class="skeleton-button"></span>
+                <span class="skeleton-button skeleton-button-primary"></span>
+              </div>
+            </div>
+
+            <div class="skeleton-toolbar">
+              <div class="skeleton-tabs">
+                <span class="skeleton-button skeleton-tab skeleton-tab-active"></span>
+                <span class="skeleton-button skeleton-tab"></span>
+              </div>
+              <div class="skeleton-create">
+                <span class="skeleton-field"></span>
+                <span class="skeleton-button skeleton-button-small"></span>
+              </div>
+            </div>
+
+            <div class="skeleton-form">
+              @for (field of [1, 2, 3, 4]; track field) {
+                <div class="skeleton-form-field">
+                  <span class="skeleton-line skeleton-label"></span>
+                  <span class="skeleton-field"></span>
+                </div>
+              }
+              <span class="skeleton-button skeleton-add-button"></span>
+            </div>
+
+            <div class="skeleton-playlist">
+              @for (item of [1, 2, 3]; track item) {
+                <div class="skeleton-playlist-item">
+                  <span class="skeleton-circle"></span>
+                  <span class="skeleton-media"></span>
+                  <div class="skeleton-item-copy">
+                    <span class="skeleton-line skeleton-item-title"></span>
+                    <span class="skeleton-line skeleton-item-status"></span>
+                  </div>
+                  <span class="skeleton-line skeleton-item-action"></span>
+                </div>
+              }
+            </div>
+          </section>
+        </div>
+      } @else if (television(); as television) {
+        <div class="page-heading">
+          <div>
+            <a class="back-link" routerLink="/televisions">← Все телевизоры</a>
+            <p class="eyebrow">УПРАВЛЕНИЕ ЭКРАНОМ</p>
+            <h1>{{ television.name }}</h1>
+            <p class="subtitle">Плейлисты, публикация и управление трансляцией.</p>
+          </div>
+        </div>
+
+        <section class="content-panel detail-panel">
+          <div class="content-panel-heading">
+            <div>
+              <p class="eyebrow">КОНТЕНТ</p>
+              <h2>Плейлисты</h2>
+              @if (broadcastEnabled()) {
+                <p>Сейчас воспроизводится: <strong>{{ playlistName(activePlaylistId()) }}</strong></p>
+              }
+            </div>
+            <div class="broadcast-actions">
+              <button nz-button nzDanger (click)="deleteTelevision()">Удалить телевизор</button>
+              <button nz-button [nzDanger]="broadcastEnabled()" (click)="toggleBroadcast()">
+                {{ broadcastEnabled() ? 'Остановить трансляцию' : 'Включить трансляцию' }}
+              </button>
+              <button nz-button nzType="primary" nzSize="large" [nzLoading]="contentBusy()" (click)="publishContent()">
+                Опубликовать изменения
+              </button>
+            </div>
+          </div>
+
+          <div class="playlist-toolbar">
+            <div class="playlist-tabs">
+              @for (playlist of playlists(); track playlist.id) {
+                <div class="playlist-tab-item" [class.selected]="selectedPlaylistId() === playlist.id">
+                  <button type="button" class="playlist-select" (click)="selectPlaylist(playlist.id)">
+                    {{ playlist.name }}
+                    @if (activePlaylistId() === playlist.id && broadcastEnabled()) { <span>В ЭФИРЕ</span> }
+                  </button>
+                  <button type="button" class="playlist-rename" (click)="renamePlaylist(playlist.id, playlist.name)">✎</button>
+                </div>
+              }
+            </div>
+            <div class="new-playlist">
+              <input nz-input placeholder="Название плейлиста" [ngModel]="newPlaylistName()" (ngModelChange)="newPlaylistName.set($event)" />
+              <button nz-button (click)="createPlaylist()">+ Создать</button>
+            </div>
+          </div>
+
+          @if (selectedPlaylistId() !== activePlaylistId()) {
+            <div class="activate-banner">
+              Этот плейлист не выбран для трансляции.
+              <button nz-button nzType="link" (click)="activatePlaylist()">Выбрать для трансляции</button>
+            </div>
+          }
+
+          <div class="content-toolbar">
+            <button nz-button nzType="primary" (click)="openContentModal()">+ Добавить материал</button>
+          </div>
+
+          <nz-modal
+            nzTitle="Добавить материал"
+            [nzVisible]="contentModalVisible()"
+            [nzFooter]="null"
+            [nzMaskClosable]="!contentBusy()"
+            [nzClosable]="!contentBusy()"
+            (nzOnCancel)="closeContentModal()"
+          >
+            <div *nzModalContent class="content-modal-form">
+              <label>
+                Название
+                <input nz-input placeholder="Например, Летнее меню" [ngModel]="contentForm().name" (ngModelChange)="updateContentForm({ name: $event })" />
+              </label>
+              <label>
+                Тип материала
+                <select [ngModel]="contentForm().type" (ngModelChange)="updateContentForm({ type: $event })">
+                  <option value="image">Изображение</option>
+                  <option value="video">Прямой видеофайл</option>
+                  <option value="youtube">YouTube</option>
+                </select>
+              </label>
+
+              @if (contentForm().type === 'image') {
+                <div class="image-source-field">
+                  <label>
+                    Ссылка на изображение
+                    <input nz-input placeholder="https://example.com/image.jpg" [ngModel]="contentForm().sourceUrl" (ngModelChange)="updateContentForm({ sourceUrl: $event })" />
+                  </label>
+                  <span class="source-divider">или</span>
+                  <label class="file-picker" [class.has-file]="selectedImage()">
+                    <input #imageFileInput type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" (change)="selectImage($event)" />
+                    <span>{{ selectedImage()?.name || 'Выбрать фото с компьютера' }}</span>
+                  </label>
+                </div>
+                <label>
+                  Показ, секунд
+                  <input nz-input type="number" min="1" [ngModel]="contentForm().durationSeconds" (ngModelChange)="updateContentForm({ durationSeconds: $event })" />
+                </label>
+              } @else {
+                <label>
+                  Ссылка на видео
+                  <input nz-input placeholder="https://example.com/video.mp4" [ngModel]="contentForm().sourceUrl" (ngModelChange)="updateContentForm({ sourceUrl: $event })" />
+                </label>
+              }
+
+              @if (contentFormError()) { <p class="form-message error">{{ contentFormError() }}</p> }
+              @if (contentUploadError()) { <p class="upload-error">{{ contentUploadError() }}</p> }
+              <div class="content-modal-actions">
+                <button nz-button [disabled]="contentBusy()" (click)="closeContentModal()">Отмена</button>
+                <button nz-button nzType="primary" [nzLoading]="contentBusy()" (click)="addContent()">Добавить в плейлист</button>
+              </div>
+            </div>
+          </nz-modal>
+
+          @if (contentMessage()) { <p class="form-message success">{{ contentMessage() }}</p> }
+          @if (contentError()) { <p class="form-message error">{{ contentError() }}</p> }
+
+          @if (contentLoading()) {
+            <div class="loading-state">Загружаем плейлист…</div>
+          } @else if (contentItems().length) {
+            <div class="playlist">
+              @for (item of contentItems(); track item.id; let index = $index) {
+                <article [class.pending-delete]="item.pendingDelete">
+                  <span class="order">{{ index + 1 }}</span>
+                  <div class="media-type">{{ item.type === 'image' ? 'IMG' : item.type === 'youtube' ? 'YOUTUBE' : 'VIDEO' }}</div>
+                  <div class="playlist-info">
+                    <strong>{{ item.name }}</strong>
+                    <span>
+                      {{ item.pendingDelete ? 'Будет удалён после публикации' : item.state === 'published' ? 'Опубликован' : 'Черновик' }}
+                    </span>
+                  </div>
+                  @if (item.pendingDelete) {
+                    <button nz-button nzType="text" (click)="restoreContent(item)">Отменить</button>
+                  } @else {
+                    <button nz-button nzType="text" (click)="deleteContent(item)">Удалить</button>
+                  }
+                </article>
+              }
+            </div>
+          } @else {
+            <div class="playlist-empty">Плейлист пуст. Добавьте первый материал.</div>
+          }
+        </section>
+      }

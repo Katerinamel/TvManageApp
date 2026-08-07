@@ -1,0 +1,55 @@
+@if (pairing.state() === 'paired' && currentItem(); as item) {
+  <main class="playback-screen">
+    @if (item.type === 'image') {
+      <img [src]="item.sourceUrl" [alt]="item.name" />
+    } @else if (item.type === 'youtube' && item.youtubeVideoId) {
+      <app-youtube-player
+        [videoId]="item.youtubeVideoId"
+        [loop]="pairing.contentItems().length === 1"
+        (playbackEnded)="nextItem()"
+      />
+    } @else {
+      <video
+        [src]="item.sourceUrl"
+        [attr.aria-label]="item.name"
+        [loop]="pairing.contentItems().length === 1"
+        autoplay
+        muted
+        playsinline
+        (ended)="nextItem()"
+      ></video>
+    }
+    <div class="playback-badge">{{ item.name }}</div>
+  </main>
+} @else {
+<main class="connect-screen">
+  <section class="connect-card">
+    <div class="logo">TV</div>
+    <p class="eyebrow">TVMANAGEAPP PLAYER</p>
+    @if (pairing.state() === 'paired') {
+      <h1>Экран подключён</h1>
+      <p class="description">
+        {{
+          pairing.contentError() ||
+            (pairing.broadcastEnabled()
+              ? 'Плейлист «' + pairing.activePlaylistName() + '» пока пуст.'
+              : 'Трансляция приостановлена администратором.')
+        }}
+      </p>
+      <div class="success-mark">✓</div>
+      <div class="status paired"><span></span> Подключение установлено</div>
+    } @else if (pairing.state() === 'error') {
+      <h1>Нет подключения</h1>
+      <p class="description">{{ pairing.errorMessage() }}</p>
+      <button class="retry" type="button" (click)="pairing.start()">Повторить</button>
+    } @else {
+      <h1>Подключите этот экран</h1>
+      <p class="description">Введите этот код в административной панели. Код действует 10 минут.</p>
+      <div class="pairing-code" [attr.aria-label]="'Код подключения ' + pairing.code()">
+        <span>{{ codePart(0) || '•••' }}</span><span>{{ codePart(1) || '•••' }}</span>
+      </div>
+      <div class="status"><span></span> {{ pairing.state() === 'loading' ? 'Получаем код' : 'Ожидаем подключения' }}</div>
+    }
+  </section>
+</main>
+}

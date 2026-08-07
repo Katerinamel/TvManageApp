@@ -1,0 +1,25 @@
+<nz-layout class="shell">
+  <nz-sider nzWidth="240px" class="sidebar">
+    <div class="brand"><span class="brand-mark">TV</span><span>TvManageApp</span></div>
+    <nav>
+      <a
+        class="nav-item"
+        routerLink="/televisions"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+      >▣ Телевизоры</a>
+      <a class="nav-item" routerLink="/televisions/connect" routerLinkActive="active">
+        ＋ Добавить телевизор
+      </a>
+      <span class="nav-item disabled">⚙ Настройки</span>
+    </nav>
+  </nz-sider>
+
+  <nz-layout>
+    <nz-header class="header">
+      <span class="environment">{{ environmentLabel }}</span>
+      <button nz-button nzType="text" (click)="logOut()">Выйти</button>
+    </nz-header>
+    <nz-content class="content"><router-outlet /></nz-content>
+  </nz-layout>
+</nz-layout>

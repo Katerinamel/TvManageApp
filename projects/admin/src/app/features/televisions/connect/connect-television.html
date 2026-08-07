@@ -1,0 +1,79 @@
+<div class="page-heading">
+        <div>
+          <a class="back-link" routerLink="/televisions">← Вернуться к телевизорам</a>
+          <p class="eyebrow">НОВОЕ УСТРОЙСТВО</p>
+          <h1>Добавить телевизор</h1>
+          <p class="subtitle">Свяжите экран с TvManageApp с помощью шестизначного кода.</p>
+        </div>
+      </div>
+
+      <div class="connect-workspace">
+        <section class="info-card">
+          <span class="step-number">1</span>
+          <h2>Откройте Player</h2>
+          <p>Запустите приложение Player на телевизоре или экране. На нём появится шестизначный код.</p>
+          <span class="step-number">2</span>
+          <h2>Введите код</h2>
+          <p>Укажите код и понятное название — например, «Экран в холле».</p>
+          <span class="step-number">3</span>
+          <h2>Начните трансляцию</h2>
+          <p>После подключения телевизор появится в общем списке, где можно настроить плейлисты.</p>
+        </section>
+
+        <section class="connect-card">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">КОД ПОДКЛЮЧЕНИЯ</p>
+              <h2>Подключить экран</h2>
+            </div>
+            @if ((pendingRequests$ | async)?.length) {
+              <span class="request-count">Есть активные запросы</span>
+            }
+          </div>
+
+          <label>
+            Код с экрана
+            <input
+              nz-input
+              maxlength="7"
+              inputmode="numeric"
+              placeholder="000 000"
+              [ngModel]="pairing().code"
+              (ngModelChange)="pairing.set({ code: $event, name: pairing().name })"
+            />
+          </label>
+          <label>
+            Название телевизора
+            <input
+              nz-input
+              placeholder="Например, Экран в холле"
+              [ngModel]="pairing().name"
+              (ngModelChange)="pairing.set({ code: pairing().code, name: $event })"
+            />
+          </label>
+          <button
+            nz-button
+            nzType="primary"
+            nzSize="large"
+            [nzLoading]="isPairing()"
+            (click)="pairTelevision()"
+          >
+            Подключить телевизор
+          </button>
+          @if (errorMessage()) { <p class="form-message error">{{ errorMessage() }}</p> }
+
+          @if (pendingRequests$ | async; as requests) {
+            @if (requests.length) {
+              <div class="pending-list">
+                <p>Коды, ожидающие подтверждения</p>
+                @for (request of requests; track request.deviceId) {
+                  <button type="button" (click)="selectRequest(request)">
+                    <strong>{{ request.code.slice(0, 3) }} {{ request.code.slice(3) }}</strong>
+                    <span>Выбрать</span>
+                  </button>
+                }
+              </div>
+            }
+          }
+        </section>
+      </div>

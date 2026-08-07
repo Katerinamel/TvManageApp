@@ -1,0 +1,46 @@
+{
+  "name": "tv-manage-app",
+  "version": "0.0.0",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve admin",
+    "start:admin": "ng serve admin",
+    "start:admin:cloud": "ng serve admin --configuration production",
+    "start:player": "ng serve player --port 4201",
+    "start:player:cloud": "ng serve player --port 4201 --configuration production",
+    "build": "npm run build:shared && npm run build:admin && npm run build:player",
+    "build:shared": "ng build shared",
+    "build:admin": "ng build admin",
+    "build:player": "ng build player",
+    "emulators": "firebase emulators:start --project demo-tv-manage-app",
+    "emulators:exec": "firebase emulators:exec --project demo-tv-manage-app",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test"
+  },
+  "private": true,
+  "packageManager": "npm@10.9.8",
+  "dependencies": {
+    "@angular/common": "^22.0.0",
+    "@angular/compiler": "^22.0.0",
+    "@angular/core": "^22.0.0",
+    "@angular/fire": "^20.0.1",
+    "@angular/forms": "^22.0.0",
+    "@angular/platform-browser": "^22.0.0",
+    "@angular/router": "^22.0.0",
+    "firebase": "^12.17.0",
+    "ng-zorro-antd": "^22.0.0",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^22.0.5",
+    "@angular/cli": "^22.0.5",
+    "@angular/compiler-cli": "^22.0.0",
+    "firebase-tools": "^15.26.0",
+    "jsdom": "^28.0.0",
+    "ng-packagr": "^22.0.0",
+    "prettier": "^3.8.1",
+    "typescript": "~6.0.2",
+    "vitest": "^4.0.8"
+  }
+}

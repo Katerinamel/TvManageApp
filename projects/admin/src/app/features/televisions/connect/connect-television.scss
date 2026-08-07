@@ -1,0 +1,39 @@
+:host { display: block; min-height: 100vh; }
+.shell { min-height: 100vh; }
+.sidebar { background: #111827; padding: 24px 16px; }
+.brand { color: white; display: flex; align-items: center; gap: 12px; font-size: 18px; font-weight: 700; margin: 0 8px 34px; }
+.brand-mark { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 9px; background: #1677ff; font-size: 13px; }
+nav { display: grid; gap: 6px; }
+.nav-item { color: #9ca3af; padding: 11px 12px; border-radius: 8px; display: flex; gap: 10px; align-items: center; }
+.nav-item.active { color: white; background: #1f2937; }
+.header { background: white; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: flex-end; gap: 20px; padding: 0 32px; }
+.environment { color: #6b7280; font-size: 13px; }
+.content { background: #f5f7fa; padding: 44px 48px; }
+.page-heading { max-width: 980px; margin: 0 auto 28px; }
+.back-link { display: inline-block; margin-bottom: 22px; color: #6b7280; }
+.eyebrow { color: #1677ff; font-size: 12px; font-weight: 700; letter-spacing: .12em; margin: 0 0 8px; }
+h1 { margin: 0; color: #111827; font-size: 34px; }
+.subtitle { margin: 10px 0 0; color: #6b7280; }
+.connect-workspace { max-width: 980px; margin: auto; display: grid; grid-template-columns: .9fr 1.2fr; gap: 24px; align-items: start; }
+.info-card, .connect-card { padding: 30px; border: 1px solid #e5e7eb; border-radius: 14px; background: white; box-shadow: 0 2px 10px rgb(17 24 39 / 4%); }
+.step-number { width: 28px; height: 28px; display: grid; place-items: center; margin-top: 22px; border-radius: 50%; color: #1677ff; background: #eaf3ff; font-weight: 700; }
+.step-number:first-child { margin-top: 0; }
+.info-card h2 { margin: 9px 0 5px; color: #111827; font-size: 17px; }
+.info-card p { margin: 0; color: #6b7280; line-height: 1.55; }
+.section-heading { display: flex; justify-content: space-between; gap: 16px; align-items: start; margin-bottom: 24px; }
+.section-heading h2 { margin: 0; color: #111827; }
+.request-count { padding: 5px 9px; border-radius: 99px; background: #eaf3ff; color: #1677ff; font-size: 12px; }
+label { display: grid; gap: 7px; margin-bottom: 18px; color: #374151; font-size: 13px; font-weight: 600; }
+label input { height: 44px; font-weight: 400; }
+.connect-card > button { width: 100%; }
+.form-message { margin: 14px 0 0; font-size: 13px; }
+.form-message.error { color: #cf1322; }
+.pending-list { margin-top: 25px; padding-top: 20px; border-top: 1px solid #eef0f3; }
+.pending-list > p { color: #6b7280; font-size: 12px; }
+.pending-list button { width: 100%; display: flex; justify-content: space-between; padding: 11px 12px; border: 1px solid #dbe7f8; border-radius: 8px; color: #1677ff; background: #f7fbff; cursor: pointer; }
+.pending-list span { font-size: 12px; }
+@media (max-width: 850px) {
+  .sidebar { display: none; }
+  .content { padding: 30px 20px; }
+  .connect-workspace { grid-template-columns: 1fr; }
+}
