@@ -34,7 +34,7 @@ jobs:
         # npm's Linux dependency resolver crashes while reading the current
         # cross-platform lockfile. Pages only needs a disposable clean build,
         # so resolve directly from package.json without rewriting the lockfile.
-        run: npm install --package-lock=false --no-audit --no-fund
+        run: npm install --legacy-peer-deps --package-lock=false --no-audit --no-fund
 
       - name: Build Player
         env:
