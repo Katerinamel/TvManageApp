@@ -13,6 +13,7 @@
 npm-debug.log
 yarn-error.log
 firebase-debug.log
+!package-lock.json
 
 # IDEs and editors
 .idea/
