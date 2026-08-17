@@ -70,6 +70,7 @@ export class PairingService implements OnDestroy {
   readonly state = signal<PlayerState>('loading');
   readonly errorMessage = signal('');
   readonly televisionId = signal<string | null>(null);
+  readonly televisionName = signal('');
   readonly contentItems = signal<PlayerContentItem[]>([]);
   readonly contentError = signal('');
   readonly broadcastEnabled = signal(true);
@@ -163,6 +164,7 @@ export class PairingService implements OnDestroy {
       (snapshot) => {
         const television = snapshot.data() as
           | {
+              name?: string;
               activePlaylistId?: string;
               libraryActivePlaylistId?: string;
               playlistSchemaVersion?: number;
@@ -170,6 +172,7 @@ export class PairingService implements OnDestroy {
               playlists?: PlaylistSummary[];
             }
           | undefined;
+        this.televisionName.set(String(television?.name ?? 'Экран'));
         this.libraryMode =
           (television?.playlistSchemaVersion ?? 0) >= 2 && !!television?.libraryActivePlaylistId;
         this.currentPlaylistId = this.libraryMode
@@ -264,6 +267,7 @@ export class PairingService implements OnDestroy {
     this.libraryMode = false;
     this.allContentItems = [];
     this.televisionId.set(null);
+    this.televisionName.set('');
     this.contentItems.set([]);
     this.contentError.set('');
     this.broadcastEnabled.set(true);

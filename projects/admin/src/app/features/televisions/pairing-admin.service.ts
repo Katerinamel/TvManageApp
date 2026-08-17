@@ -32,6 +32,7 @@ export class PairingAdminService {
   readonly selectedPlaylistId = this.playlistAdmin.selectedPlaylistId;
   readonly activePlaylistId = this.playlistAdmin.activePlaylistId;
   readonly broadcastEnabled = this.playlistAdmin.broadcastEnabled;
+  readonly broadcastSource = this.playlistAdmin.broadcastSource;
   readonly pendingRequests$ = this.pairing.pendingRequests$;
 
   refreshTelevisions(): Promise<void> {
@@ -73,6 +74,10 @@ export class PairingAdminService {
 
   publishContent(televisionId: string): Promise<void> {
     return this.contentAdmin.publish(televisionId);
+  }
+
+  reorderContent(televisionId: string, fromIndex: number, toIndex: number): void {
+    this.contentAdmin.reorder(televisionId, fromIndex, toIndex);
   }
 
   async openTelevision(televisionId: string): Promise<void> {

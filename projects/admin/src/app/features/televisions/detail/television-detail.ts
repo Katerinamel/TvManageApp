@@ -4,22 +4,36 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzModalModule } from 'ng-zorro-antd/modal';
+import { GroupAdminService } from '../../groups/group-admin.service';
 import {
   ContentListItem,
   PairingAdminService,
   TelevisionListItem,
   isSupportedImageFile,
 } from '../pairing-admin.service';
+import { PlaylistLibraryService } from '../playlist-library.service';
+import { TelevisionAdminService } from '../television-admin.service';
+import { ContentDropZoneDirective } from './content-drop-zone.directive';
 
 @Component({
   selector: 'app-television-detail',
-  imports: [FormsModule, RouterLink, NzButtonModule, NzInputModule, NzModalModule],
+  imports: [
+    FormsModule,
+    RouterLink,
+    NzButtonModule,
+    NzInputModule,
+    NzModalModule,
+    ContentDropZoneDirective,
+  ],
   templateUrl: './television-detail.html',
   styleUrl: './television-detail.scss',
 })
 export class TelevisionDetail implements OnInit {
   @ViewChild('imageFileInput') private imageFileInput?: ElementRef<HTMLInputElement>;
   private readonly pairingService = inject(PairingAdminService);
+  private readonly playlistLibrary = inject(PlaylistLibraryService);
+  private readonly televisionAdmin = inject(TelevisionAdminService);
+  private readonly groupAdmin = inject(GroupAdminService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
@@ -32,6 +46,7 @@ export class TelevisionDetail implements OnInit {
   protected readonly selectedPlaylistId = this.pairingService.selectedPlaylistId;
   protected readonly activePlaylistId = this.pairingService.activePlaylistId;
   protected readonly broadcastEnabled = this.pairingService.broadcastEnabled;
+  protected readonly broadcastSource = this.pairingService.broadcastSource;
   protected readonly newPlaylistName = signal('');
   protected readonly contentForm = signal({
     name: '',
@@ -45,6 +60,16 @@ export class TelevisionDetail implements OnInit {
   protected readonly contentMessage = signal('');
   protected readonly contentFormError = signal('');
   protected readonly contentUploadError = signal('');
+  protected readonly draggedContentIndex = signal<number | null>(null);
+  protected readonly contentDropIndex = signal<number | null>(null);
+  protected readonly playlistTransferVisible = signal(false);
+  protected readonly playlistTransferAction = signal<'copy' | 'move'>('copy');
+  protected readonly playlistTargetType = signal<'television' | 'group'>('television');
+  protected readonly playlistTargetId = signal('');
+  protected readonly playlistTransferBusy = signal(false);
+  protected readonly playlistTransferError = signal('');
+  protected readonly televisions = this.televisionAdmin.televisions;
+  protected readonly groups = this.groupAdmin.groups;
 
   async ngOnInit(): Promise<void> {
     const televisionId = this.route.snapshot.paramMap.get('id');
@@ -167,6 +192,35 @@ export class TelevisionDetail implements OnInit {
     this.contentMessage.set('Удаление отменено.');
   }
 
+  protected startContentDrag(event: DragEvent, index: number): void {
+    this.draggedContentIndex.set(index);
+    this.contentDropIndex.set(index);
+    event.dataTransfer?.setData('text/plain', String(index));
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+  }
+
+  protected markContentDropTarget(index: number): void {
+    this.contentDropIndex.set(index);
+  }
+
+  protected dropContent(event: DragEvent, index: number): void {
+    event.preventDefault();
+    const television = this.television();
+    const fromIndex = this.draggedContentIndex();
+    if (television && fromIndex !== null) {
+      this.pairingService.reorderContent(television.id, fromIndex, index);
+      if (fromIndex !== index) {
+        this.contentMessage.set('Порядок изменён. Опубликуйте изменения, чтобы обновить эфир.');
+      }
+    }
+    this.finishContentDrag();
+  }
+
+  protected finishContentDrag(): void {
+    this.draggedContentIndex.set(null);
+    this.contentDropIndex.set(null);
+  }
+
   protected async publishContent(): Promise<void> {
     const television = this.television();
     if (!television) return;
@@ -197,6 +251,75 @@ export class TelevisionDetail implements OnInit {
     await this.pairingService.renamePlaylist(television.id, playlistId, name);
   }
 
+  protected openPlaylistTransfer(): void {
+    this.playlistTransferAction.set('copy');
+    this.playlistTargetType.set('television');
+    this.playlistTargetId.set(this.availableTargetTelevisions()[0]?.id ?? '');
+    this.playlistTransferError.set('');
+    this.playlistTransferVisible.set(true);
+  }
+
+  protected closePlaylistTransfer(): void {
+    if (!this.playlistTransferBusy()) this.playlistTransferVisible.set(false);
+  }
+
+  protected setPlaylistTransferAction(action: 'copy' | 'move'): void {
+    this.playlistTransferAction.set(action);
+    if (action === 'move') this.playlistTargetType.set('television');
+    this.selectFirstPlaylistTarget();
+  }
+
+  protected setPlaylistTargetType(type: 'television' | 'group'): void {
+    this.playlistTargetType.set(type);
+    this.selectFirstPlaylistTarget();
+  }
+
+  protected availableTargetTelevisions(): TelevisionListItem[] {
+    const currentId = this.television()?.id;
+    return this.televisions().filter((item) => item.id !== currentId);
+  }
+
+  protected async transferPlaylist(): Promise<void> {
+    const playlistId = this.selectedPlaylistId();
+    const targetId = this.playlistTargetId();
+    const current = this.television();
+    if (!playlistId || !targetId || !current) return;
+
+    this.playlistTransferBusy.set(true);
+    this.playlistTransferError.set('');
+    try {
+      if (this.playlistTransferAction() === 'move') {
+        await this.playlistLibrary.moveToTelevision(playlistId, targetId, current.id);
+        this.contentMessage.set('Плейлист перемещён на другой телевизор.');
+      } else if (this.playlistTargetType() === 'group') {
+        await this.playlistLibrary.copyToGroup(playlistId, targetId);
+        this.contentMessage.set('Копия плейлиста создана для группы.');
+      } else {
+        await this.playlistLibrary.copyToTelevision(playlistId, targetId);
+        this.contentMessage.set('Копия плейлиста создана на другом телевизоре.');
+      }
+      this.playlistTransferVisible.set(false);
+      const refreshed = await this.pairingService.getTelevision(current.id);
+      if (refreshed) this.television.set(refreshed);
+      await Promise.all([
+        this.pairingService.openTelevision(current.id),
+        this.televisionAdmin.refresh(),
+        this.groupAdmin.refresh(),
+      ]);
+    } catch (error) {
+      const code = error instanceof Error ? error.message : '';
+      this.playlistTransferError.set(
+        code === 'GROUP_PLAYLIST_MOVE_NOT_SUPPORTED'
+          ? 'Общий плейлист группы нельзя переместить. Его можно скопировать.'
+          : code === 'PLAYLIST_TOO_LARGE'
+            ? 'В плейлисте слишком много материалов для одного копирования.'
+            : 'Не удалось выполнить операцию. Проверьте соединение и попробуйте снова.',
+      );
+    } finally {
+      this.playlistTransferBusy.set(false);
+    }
+  }
+
   protected async activatePlaylist(): Promise<void> {
     const television = this.television();
     if (television) await this.pairingService.activatePlaylist(television.id);
@@ -205,7 +328,9 @@ export class TelevisionDetail implements OnInit {
   protected async toggleBroadcast(): Promise<void> {
     const television = this.television();
     if (television) {
-      await this.pairingService.setBroadcastEnabled(television.id, !this.broadcastEnabled());
+      const personalBroadcastIsActive =
+        this.broadcastEnabled() && this.broadcastSource() === 'television';
+      await this.pairingService.setBroadcastEnabled(television.id, !personalBroadcastIsActive);
     }
   }
 
@@ -229,5 +354,10 @@ export class TelevisionDetail implements OnInit {
   private resetContentForm(): void {
     this.contentForm.set({ name: '', type: 'image', sourceUrl: '', durationSeconds: 10 });
     this.clearSelectedImage();
+  }
+
+  private selectFirstPlaylistTarget(): void {
+    const targets = this.playlistTargetType() === 'group' ? this.groups() : this.availableTargetTelevisions();
+    this.playlistTargetId.set(targets[0]?.id ?? '');
   }
 }

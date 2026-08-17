@@ -36,6 +36,27 @@ export function contentCollectionPath(
     : `televisions/${televisionId}/contentItems`;
 }
 
+export function reorderContentItems(
+  items: ContentListItem[],
+  fromIndex: number,
+  toIndex: number,
+): ContentListItem[] {
+  if (
+    fromIndex === toIndex ||
+    fromIndex < 0 ||
+    toIndex < 0 ||
+    fromIndex >= items.length ||
+    toIndex >= items.length
+  ) {
+    return items;
+  }
+  const reordered = [...items];
+  const [movedItem] = reordered.splice(fromIndex, 1);
+  if (!movedItem) return items;
+  reordered.splice(toIndex, 0, movedItem);
+  return reordered.map((item, order) => ({ ...item, order }));
+}
+
 @Injectable({ providedIn: 'root' })
 export class ContentAdminService {
   private readonly firestore = inject(Firestore);
@@ -217,6 +238,16 @@ export class ContentAdminService {
     await batch.commit();
     await Promise.all(storagePathsToDelete.map((path) => this.uploads.deleteFile(path)));
     await this.load(televisionId, true);
+  }
+
+  reorder(televisionId: string, fromIndex: number, toIndex: number): void {
+    const reorderedItems = reorderContentItems(this.items(), fromIndex, toIndex);
+    if (reorderedItems === this.items()) return;
+    this.items.set(reorderedItems);
+    this.cache.set(
+      this.cacheKey(televisionId, this.editor.selectedPlaylistId()),
+      reorderedItems,
+    );
   }
 
   clearTelevision(televisionId: string): void {

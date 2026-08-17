@@ -65,11 +65,26 @@
           }
 
           <div class="shared-playlist">
-            <span>Общий плейлист</span>
+            <div class="shared-playlist-heading">
+              <span>Общий плейлист</span>
+              @if (group.activePlaylistId && group.broadcastEnabled) {
+                <span class="live-badge">В ЭФИРЕ</span>
+              }
+            </div>
             <strong>{{ playlistName(group.activePlaylistId) }}</strong>
           </div>
 
           <div class="group-actions">
+            <button
+              nz-button
+              [nzType]="group.broadcastEnabled ? 'default' : 'primary'"
+              [nzDanger]="group.broadcastEnabled"
+              [disabled]="!group.activePlaylistId || !members(group).length"
+              [nzLoading]="broadcastBusyGroupId() === group.id"
+              (click)="toggleGroupBroadcast(group)"
+            >
+              {{ group.broadcastEnabled ? 'Остановить эфир' : 'Запустить эфир' }}
+            </button>
             <button nz-button (click)="openGroup(group)">Настроить</button>
             <button
               nz-button
@@ -150,7 +165,7 @@
       }
     </select>
     <p class="playlist-hint">
-      После сохранения выбранный плейлист включится на всех телевизорах группы.
+      После сохранения плейлист будет подготовлен для всех телевизоров. Запустить эфир можно в карточке группы.
     </p>
   </ng-container>
 </nz-modal>

@@ -27,6 +27,7 @@
     <div class="logo">TV</div>
     <p class="eyebrow">TVMANAGEAPP PLAYER</p>
     @if (pairing.state() === 'paired') {
+      <p class="screen-name">{{ pairing.televisionName() }}</p>
       <h1>Экран подключён</h1>
       <p class="description">
         {{
@@ -38,6 +39,12 @@
       </p>
       <div class="success-mark">✓</div>
       <div class="status paired"><span></span> Подключение установлено</div>
+    } @else if (pairing.state() === 'loading') {
+      <div class="loading-indicator" aria-label="Загрузка" aria-busy="true">
+        <span></span>
+      </div>
+      <h1>Загружаем экран</h1>
+      <p class="description">Проверяем подключение и получаем настройки трансляции…</p>
     } @else if (pairing.state() === 'error') {
       <h1>Нет подключения</h1>
       <p class="description">{{ pairing.errorMessage() }}</p>
@@ -48,7 +55,7 @@
       <div class="pairing-code" [attr.aria-label]="'Код подключения ' + pairing.code()">
         <span>{{ codePart(0) || '•••' }}</span><span>{{ codePart(1) || '•••' }}</span>
       </div>
-      <div class="status"><span></span> {{ pairing.state() === 'loading' ? 'Получаем код' : 'Ожидаем подключения' }}</div>
+      <div class="status"><span></span> Ожидаем подключения</div>
     }
   </section>
 </main>

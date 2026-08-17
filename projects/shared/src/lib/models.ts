@@ -8,6 +8,7 @@ export interface PlaylistSummary {
 }
 
 export type PlaylistOwnerType = 'television' | 'group';
+export type BroadcastSource = 'television' | 'group';
 
 export interface Playlist {
   id: string;
@@ -17,6 +18,10 @@ export interface Playlist {
   assignedTelevisionIds: string[];
   viewerDeviceIds: string[];
   sourcePlaylistId?: string;
+  previousOwnerType?: PlaylistOwnerType;
+  previousOwnerId?: string;
+  previousAssignedTelevisionIds?: string[];
+  previousViewerDeviceIds?: string[];
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -45,10 +50,12 @@ export interface Television {
   playlists?: PlaylistSummary[];
   playlistIds?: string[];
   libraryActivePlaylistId?: string;
+  personalPlaylistId?: string;
   playlistSchemaVersion?: number;
   groupId?: string;
   activePlaylistId?: string;
   broadcastEnabled?: boolean;
+  broadcastSource?: BroadcastSource;
   publishedAt?: Date;
   updatedAt: Date;
   createdAt: Date;
@@ -82,10 +89,12 @@ export type TelevisionListItem = Pick<
   | 'playlists'
   | 'playlistIds'
   | 'libraryActivePlaylistId'
+  | 'personalPlaylistId'
   | 'playlistSchemaVersion'
   | 'groupId'
   | 'activePlaylistId'
   | 'broadcastEnabled'
+  | 'broadcastSource'
 >;
 
 export type ContentListItem = Pick<

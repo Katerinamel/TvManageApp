@@ -339,7 +339,48 @@ label input {
   background: #fffbe6;
   color: #8c6d1f;
 }
-.content-toolbar { display: flex; justify-content: flex-end; margin-top: 18px; }
+.content-toolbar { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 18px; }
+.playlist-transfer-form { display: grid; gap: 18px; padding-top: 4px; }
+.playlist-transfer-form label { margin: 0; }
+.playlist-transfer-form select {
+  width: 100%;
+  height: 42px;
+  padding: 0 10px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  background: white;
+}
+.transfer-playlist-name { margin: 0; color: #6b7280; }
+.transfer-playlist-name strong { color: #111827; }
+.transfer-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 3px;
+  border-radius: 8px;
+  background: #f3f4f6;
+}
+.transfer-switch button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+}
+.transfer-switch button.active {
+  background: white;
+  color: #1677ff;
+  box-shadow: 0 1px 4px rgb(17 24 39 / 10%);
+}
+.transfer-hint {
+  margin: 0;
+  padding: 11px 12px;
+  border-radius: 7px;
+  background: #f5f7fa;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.5;
+}
 .content-modal-form { display: grid; gap: 18px; padding-top: 4px; }
 .content-modal-form label { margin: 0; }
 .content-modal-form select {
@@ -457,6 +498,7 @@ label input {
 }
 @media (max-width: 720px) {
   .content-panel { padding: 20px; }
+  .content-toolbar { flex-direction: column; }
   .content-toolbar button { width: 100%; }
   .playlist article { align-items: flex-start; flex-wrap: wrap; }
   .playlist-info { min-width: calc(100% - 120px); }

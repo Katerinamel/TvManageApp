@@ -164,11 +164,24 @@ h1 {
   color: #6b7280;
   font-size: 12px;
 }
+.shared-playlist-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.shared-playlist-heading .live-badge {
+  color: #389e0d;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .06em;
+}
 .shared-playlist strong {
   color: #111827;
 }
 .group-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: auto;
 }

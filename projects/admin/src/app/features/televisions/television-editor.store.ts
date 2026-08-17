@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import type { PlaylistSummary } from 'shared';
+import type { BroadcastSource, PlaylistSummary } from 'shared';
 
 @Injectable({ providedIn: 'root' })
 export class TelevisionEditorStore {
@@ -7,6 +7,7 @@ export class TelevisionEditorStore {
   readonly selectedPlaylistId = signal('default');
   readonly activePlaylistId = signal('default');
   readonly broadcastEnabled = signal(true);
+  readonly broadcastSource = signal<BroadcastSource>('television');
   readonly libraryMode = signal(false);
 
   reset(): void {
@@ -14,6 +15,7 @@ export class TelevisionEditorStore {
     this.selectedPlaylistId.set('default');
     this.activePlaylistId.set('default');
     this.broadcastEnabled.set(true);
+    this.broadcastSource.set('television');
     this.libraryMode.set(false);
   }
 }

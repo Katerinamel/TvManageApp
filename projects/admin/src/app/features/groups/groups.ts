@@ -31,6 +31,7 @@ export class Groups {
   protected readonly selectedPlaylistId = signal('');
   protected readonly modalVisible = signal(false);
   protected readonly busy = signal(false);
+  protected readonly broadcastBusyGroupId = signal<string | null>(null);
   protected readonly message = signal('');
 
   protected async createGroup(): Promise<void> {
@@ -118,6 +119,19 @@ export class Groups {
 
   protected playlistName(playlistId: string | undefined): string {
     return this.playlists().find((playlist) => playlist.id === playlistId)?.name ?? 'Не назначен';
+  }
+
+  protected async toggleGroupBroadcast(group: TelevisionGroup): Promise<void> {
+    if (this.broadcastBusyGroupId() || !group.activePlaylistId || !this.members(group).length) return;
+    this.broadcastBusyGroupId.set(group.id);
+    this.message.set('');
+    try {
+      const enabled = !group.broadcastEnabled;
+      await this.groupAdmin.setBroadcastEnabled(group, enabled, this.televisions());
+      this.message.set(enabled ? `Трансляция группы «${group.name}» запущена.` : `Трансляция группы «${group.name}» остановлена.`);
+    } finally {
+      this.broadcastBusyGroupId.set(null);
+    }
   }
 
   protected async deleteGroup(group: TelevisionGroup): Promise<void> {

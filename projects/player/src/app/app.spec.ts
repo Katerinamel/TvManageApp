@@ -9,6 +9,7 @@ const pairingServiceMock = {
   state: signal<'loading' | 'pending' | 'paired' | 'error'>('pending'),
   errorMessage: signal(''),
   televisionId: signal<string | null>(null),
+  televisionName: signal('Телевизор в сауне'),
   contentItems: signal<
     Array<{
       id: string;
@@ -51,6 +52,14 @@ describe('App', () => {
     expect(compiled.querySelector('.pairing-code')?.textContent).toContain('921');
   });
 
+  it('does not show a pairing code while checking an existing connection', async () => {
+    pairingServiceMock.state.set('loading');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    expect(fixture.nativeElement.textContent).toContain('Загружаем экран');
+    expect(fixture.nativeElement.querySelector('.pairing-code')).toBeNull();
+  });
+
   it('renders published image content after pairing', async () => {
     pairingServiceMock.state.set('paired');
     pairingServiceMock.contentItems.set([
@@ -76,5 +85,6 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     expect(fixture.nativeElement.textContent).toContain('Трансляция приостановлена');
+    expect(fixture.nativeElement.textContent).toContain('Телевизор в сауне');
   });
 });

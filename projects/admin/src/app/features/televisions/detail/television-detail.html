@@ -73,13 +73,26 @@
               <p class="eyebrow">КОНТЕНТ</p>
               <h2>Плейлисты</h2>
               @if (broadcastEnabled()) {
-                <p>Сейчас воспроизводится: <strong>{{ playlistName(activePlaylistId()) }}</strong></p>
+                <p>
+                  Сейчас воспроизводится: <strong>{{ playlistName(activePlaylistId()) }}</strong>
+                  · {{ broadcastSource() === 'group' ? 'эфир группы' : 'личный эфир' }}
+                </p>
               }
             </div>
             <div class="broadcast-actions">
               <button nz-button nzDanger (click)="deleteTelevision()">Удалить телевизор</button>
-              <button nz-button [nzDanger]="broadcastEnabled()" (click)="toggleBroadcast()">
-                {{ broadcastEnabled() ? 'Остановить трансляцию' : 'Включить трансляцию' }}
+              <button
+                nz-button
+                [nzDanger]="broadcastEnabled() && broadcastSource() === 'television'"
+                (click)="toggleBroadcast()"
+              >
+                @if (broadcastEnabled() && broadcastSource() === 'television') {
+                  Остановить личную трансляцию
+                } @else if (broadcastEnabled() && broadcastSource() === 'group') {
+                  Включить личную трансляцию
+                } @else {
+                  Включить трансляцию
+                }
               </button>
               <button nz-button nzType="primary" nzSize="large" [nzLoading]="contentBusy()" (click)="publishContent()">
                 Опубликовать изменения
@@ -113,8 +126,90 @@
           }
 
           <div class="content-toolbar">
+            @if (contentItems().length > 1) {
+              <span class="reorder-hint">Перетаскивайте материалы за маркер ⋮⋮</span>
+            }
+            <button nz-button (click)="openPlaylistTransfer()">Копировать или переместить</button>
             <button nz-button nzType="primary" (click)="openContentModal()">+ Добавить материал</button>
           </div>
+
+          <nz-modal
+            nzTitle="Копировать или переместить плейлист"
+            [nzVisible]="playlistTransferVisible()"
+            [nzFooter]="null"
+            [nzMaskClosable]="!playlistTransferBusy()"
+            [nzClosable]="!playlistTransferBusy()"
+            (nzOnCancel)="closePlaylistTransfer()"
+          >
+            <div *nzModalContent class="playlist-transfer-form">
+              <p class="transfer-playlist-name">
+                Плейлист: <strong>{{ playlistName(selectedPlaylistId()) }}</strong>
+              </p>
+
+              <div class="transfer-switch" role="group" aria-label="Действие с плейлистом">
+                <button
+                  type="button"
+                  [class.active]="playlistTransferAction() === 'copy'"
+                  (click)="setPlaylistTransferAction('copy')"
+                >Копировать</button>
+                <button
+                  type="button"
+                  [class.active]="playlistTransferAction() === 'move'"
+                  (click)="setPlaylistTransferAction('move')"
+                >Переместить</button>
+              </div>
+
+              @if (playlistTransferAction() === 'copy') {
+                <label>
+                  Куда добавить копию
+                  <select [ngModel]="playlistTargetType()" (ngModelChange)="setPlaylistTargetType($event)">
+                    <option value="television">На телевизор</option>
+                    <option value="group">В группу телевизоров</option>
+                  </select>
+                </label>
+              }
+
+              <label>
+                {{ playlistTargetType() === 'group' ? 'Группа' : 'Телевизор' }}
+                <select [ngModel]="playlistTargetId()" (ngModelChange)="playlistTargetId.set($event)">
+                  @if (playlistTargetType() === 'group') {
+                    @for (group of groups(); track group.id) {
+                      <option [value]="group.id">{{ group.name }}</option>
+                    }
+                  } @else {
+                    @for (item of availableTargetTelevisions(); track item.id) {
+                      <option [value]="item.id">{{ item.name }}</option>
+                    }
+                  }
+                </select>
+              </label>
+
+              @if (!playlistTargetId()) {
+                <p class="form-message error">
+                  {{ playlistTargetType() === 'group' ? 'Сначала создайте группу.' : 'Нет другого телевизора для этой операции.' }}
+                </p>
+              }
+              @if (playlistTransferError()) { <p class="form-message error">{{ playlistTransferError() }}</p> }
+
+              <p class="transfer-hint">
+                @if (playlistTransferAction() === 'copy') {
+                  Создаст отдельную копию. Загружать медиафайлы повторно не потребуется.
+                } @else {
+                  Плейлист исчезнет с текущего телевизора и появится на выбранном.
+                }
+              </p>
+              <div class="content-modal-actions">
+                <button nz-button [disabled]="playlistTransferBusy()" (click)="closePlaylistTransfer()">Отмена</button>
+                <button
+                  nz-button
+                  nzType="primary"
+                  [disabled]="!playlistTargetId()"
+                  [nzLoading]="playlistTransferBusy()"
+                  (click)="transferPlaylist()"
+                >{{ playlistTransferAction() === 'copy' ? 'Создать копию' : 'Переместить' }}</button>
+              </div>
+            </div>
+          </nz-modal>
 
           <nz-modal
             nzTitle="Добавить материал"
@@ -178,7 +273,24 @@
           } @else if (contentItems().length) {
             <div class="playlist">
               @for (item of contentItems(); track item.id; let index = $index) {
-                <article [class.pending-delete]="item.pendingDelete">
+                <article
+                  [appContentDropZone]="index"
+                  [class.pending-delete]="item.pendingDelete"
+                  [class.dragging]="draggedContentIndex() === index"
+                  [class.drop-target]="contentDropIndex() === index && draggedContentIndex() !== index"
+                  (contentDragEntered)="markContentDropTarget($event)"
+                  (contentDropped)="dropContent($event.event, $event.index)"
+                >
+                  <span
+                    class="drag-handle"
+                    draggable="true"
+                    role="button"
+                    tabindex="0"
+                    aria-label="Перетащить материал"
+                    title="Изменить порядок"
+                    (dragstart)="startContentDrag($event, index)"
+                    (dragend)="finishContentDrag()"
+                  >⋮⋮</span>
                   <span class="order">{{ index + 1 }}</span>
                   <div class="media-type">{{ item.type === 'image' ? 'IMG' : item.type === 'youtube' ? 'YOUTUBE' : 'VIDEO' }}</div>
                   <div class="playlist-info">

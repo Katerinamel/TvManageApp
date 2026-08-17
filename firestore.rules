@@ -21,7 +21,14 @@ service cloud.firestore {
         && request.resource.data.deviceId == deviceId
         && request.resource.data.status == 'pending';
       allow read: if isAdmin() || (signedIn() && request.auth.uid == deviceId);
-      allow update, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (signedIn()
+          && request.auth.uid == deviceId
+          && resource.data.deviceId == deviceId
+          && request.resource.data.deviceId == deviceId
+          && resource.data.status in ['pending', 'expired']
+          && request.resource.data.status == 'pending');
+      allow delete: if isAdmin();
     }
 
     match /televisions/{televisionId} {

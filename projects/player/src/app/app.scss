@@ -56,6 +56,21 @@
   font-weight: 700;
   letter-spacing: 0.16em;
 }
+.screen-name {
+  width: fit-content;
+  max-width: 100%;
+  margin: 24px auto 0;
+  padding: 8px 14px;
+  overflow: hidden;
+  border: 1px solid rgb(112 173 255 / 28%);
+  border-radius: 999px;
+  color: #dbeafe;
+  background: rgb(22 119 255 / 10%);
+  font-size: clamp(16px, 2vw, 21px);
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 h1 {
   margin: 12px 0;
   font-size: clamp(32px, 5vw, 54px);
@@ -109,6 +124,26 @@ h1 {
   border: 1px solid rgb(82 196 26 / 45%);
   font-size: 58px;
 }
+.loading-indicator {
+  width: 88px;
+  height: 88px;
+  display: grid;
+  place-items: center;
+  margin: 38px auto 24px;
+  border-radius: 24px;
+  background: rgb(255 255 255 / 5%);
+}
+.loading-indicator span {
+  width: 38px;
+  height: 38px;
+  border: 3px solid rgb(112 173 255 / 22%);
+  border-top-color: #70adff;
+  border-radius: 50%;
+  animation: loading-spin .8s linear infinite;
+}
+@keyframes loading-spin {
+  to { transform: rotate(360deg); }
+}
 .status.paired {
   color: #d9f7be;
 }
@@ -121,4 +156,7 @@ h1 {
   background: #1677ff;
   font: inherit;
   cursor: pointer;
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading-indicator span { animation: none; }
 }
