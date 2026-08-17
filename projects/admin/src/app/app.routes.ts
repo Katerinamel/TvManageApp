@@ -10,9 +10,12 @@ export const routes: Routes = [
   {
     path: '',
     canActivate: [authGuard],
-    loadComponent: () =>
-      import('./layout/admin-layout').then((module) => module.AdminLayout),
+    loadComponent: () => import('./layout/admin-layout').then((module) => module.AdminLayout),
     children: [
+      {
+        path: 'groups',
+        loadComponent: () => import('./features/groups/groups').then((module) => module.Groups),
+      },
       {
         path: 'televisions/connect',
         loadComponent: () =>

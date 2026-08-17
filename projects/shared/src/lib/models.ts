@@ -2,6 +2,36 @@ export type ScreenOrientation = 'landscape' | 'portrait';
 export type ContentType = 'image' | 'video' | 'youtube';
 export type ContentState = 'draft' | 'published';
 
+export interface PlaylistSummary {
+  id: string;
+  name: string;
+}
+
+export type PlaylistOwnerType = 'television' | 'group';
+
+export interface Playlist {
+  id: string;
+  name: string;
+  ownerType: PlaylistOwnerType;
+  ownerId: string;
+  assignedTelevisionIds: string[];
+  viewerDeviceIds: string[];
+  sourcePlaylistId?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface TelevisionGroup {
+  id: string;
+  name: string;
+  televisionIds: string[];
+  deviceIds: string[];
+  activePlaylistId?: string;
+  broadcastEnabled: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 export interface Television {
   id: string;
   deviceId: string;
@@ -12,7 +42,11 @@ export interface Television {
   resolution?: { width: number; height: number };
   pairingStatus: 'paired' | 'unpaired';
   publishedRevision: number;
-  playlists?: Array<{ id: string; name: string }>;
+  playlists?: PlaylistSummary[];
+  playlistIds?: string[];
+  libraryActivePlaylistId?: string;
+  playlistSchemaVersion?: number;
+  groupId?: string;
   activePlaylistId?: string;
   broadcastEnabled?: boolean;
   publishedAt?: Date;
@@ -24,19 +58,50 @@ export interface TelevisionContentItem {
   id: string;
   name: string;
   type: ContentType;
-  mimeType: string;
+  mimeType?: string;
   storagePath?: string;
-  sourceUrl?: string;
+  sourceUrl: string;
   youtubeVideoId?: string;
   playlistId?: string;
   order: number;
   durationSeconds?: number;
-  size: number;
-  createdAt: Date;
-  updatedAt: Date;
+  size?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
   state: ContentState;
   revision?: number;
+  pendingDelete?: boolean;
 }
+
+export type TelevisionListItem = Pick<
+  Television,
+  | 'id'
+  | 'name'
+  | 'deviceId'
+  | 'pairingStatus'
+  | 'playlists'
+  | 'playlistIds'
+  | 'libraryActivePlaylistId'
+  | 'playlistSchemaVersion'
+  | 'groupId'
+  | 'activePlaylistId'
+  | 'broadcastEnabled'
+>;
+
+export type ContentListItem = Pick<
+  TelevisionContentItem,
+  | 'id'
+  | 'name'
+  | 'type'
+  | 'sourceUrl'
+  | 'youtubeVideoId'
+  | 'order'
+  | 'durationSeconds'
+  | 'state'
+  | 'playlistId'
+  | 'pendingDelete'
+  | 'storagePath'
+>;
 
 export interface PairingRequest {
   deviceId: string;

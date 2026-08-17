@@ -36,5 +36,22 @@ service cloud.firestore {
         allow create, update, delete: if isAdmin();
       }
     }
+
+    match /groups/{groupId} {
+      allow read, create, update, delete: if isAdmin();
+    }
+
+    match /playlists/{playlistId} {
+      allow read: if isAdmin()
+        || (signedIn() && request.auth.uid in resource.data.viewerDeviceIds);
+      allow create, update, delete: if isAdmin();
+
+      match /contentItems/{contentItemId} {
+        allow read: if isAdmin()
+          || (signedIn()
+            && request.auth.uid in get(/databases/$(database)/documents/playlists/$(playlistId)).data.viewerDeviceIds);
+        allow create, update, delete: if isAdmin();
+      }
+    }
   }
 }

@@ -10,6 +10,7 @@ describe('shared models', () => {
       type: 'image',
       mimeType: 'image/webp',
       storagePath: 'televisions/tv-1/content-1/welcome.webp',
+      sourceUrl: 'https://example.com/welcome.webp',
       order: 0,
       durationSeconds: 10,
       size: 1024,

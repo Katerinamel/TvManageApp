@@ -1,0 +1,135 @@
+<div class="page-heading">
+  <div>
+    <p class="eyebrow">УПРАВЛЕНИЕ УСТРОЙСТВАМИ</p>
+    <h1>Группы телевизоров</h1>
+    <p class="subtitle">Объединяйте экраны для общей трансляции и управления плейлистами.</p>
+  </div>
+</div>
+
+<section class="panel create-panel">
+  <div>
+    <h2>Новая группа</h2>
+    <p>Например, «Сауны», «Ресепшен» или «Первый этаж».</p>
+  </div>
+  <div class="create-form">
+    <input
+      nz-input
+      [ngModel]="newGroupName()"
+      (ngModelChange)="newGroupName.set($event)"
+      placeholder="Название группы"
+      (keyup.enter)="createGroup()"
+    />
+    <button nz-button nzType="primary" [nzLoading]="busy()" (click)="createGroup()">
+      + Создать группу
+    </button>
+  </div>
+</section>
+
+@if (message()) {
+  <p class="page-message">{{ message() }}</p>
+}
+
+<section class="panel groups-panel">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">ГРУППЫ</p>
+      <h2>Общие экраны</h2>
+    </div>
+    <button nz-button nzType="text" (click)="refreshGroups()">Обновить</button>
+  </div>
+
+  @if (groupsError()) {
+    <p class="form-message error">{{ groupsError() }}</p>
+  } @else if (groupsLoading() || televisionsLoading()) {
+    <div class="loading-state">Загружаем группы…</div>
+  } @else if (groups().length) {
+    <div class="group-grid">
+      @for (group of groups(); track group.id) {
+        <article class="group-card">
+          <div class="group-card-heading">
+            <div class="group-icon">▦</div>
+            <div>
+              <h3>{{ group.name }}</h3>
+              <p>{{ members(group).length }} экранов</p>
+            </div>
+          </div>
+
+          @if (members(group).length) {
+            <div class="member-list">
+              @for (television of members(group); track television.id) {
+                <span>{{ television.name }}</span>
+              }
+            </div>
+          } @else {
+            <p class="empty-members">Добавьте телевизоры в эту группу.</p>
+          }
+
+          <div class="group-actions">
+            <button nz-button (click)="openGroup(group)">Настроить</button>
+            <button
+              nz-button
+              nzDanger
+              nz-popconfirm
+              nzPopconfirmTitle="Удалить группу? Телевизоры останутся в системе."
+              nzOkText="Удалить"
+              nzCancelText="Отмена"
+              (nzOnConfirm)="deleteGroup(group)"
+            >
+              Удалить
+            </button>
+          </div>
+        </article>
+      }
+    </div>
+  } @else {
+    <div class="empty-state">
+      <div class="group-icon large">▦</div>
+      <h2>Групп пока нет</h2>
+      <p>Создайте первую группу и добавьте в неё подключённые телевизоры.</p>
+    </div>
+  }
+</section>
+
+<nz-modal
+  [nzVisible]="modalVisible()"
+  nzTitle="Настроить группу"
+  [nzOkLoading]="busy()"
+  nzOkText="Сохранить"
+  nzCancelText="Отмена"
+  (nzOnOk)="saveGroup()"
+  (nzOnCancel)="closeModal()"
+>
+  <ng-container *nzModalContent>
+    <label class="field-label" for="group-name">Название группы</label>
+    <input id="group-name" nz-input [ngModel]="editName()" (ngModelChange)="editName.set($event)" />
+
+    <div class="member-picker-heading">
+      <strong>Телевизоры</strong>
+      <span>Выбрано: {{ selectedTelevisionIds().length }}</span>
+    </div>
+    <div class="member-picker">
+      @for (television of televisions(); track television.id) {
+        <label class="member-option" [class.disabled]="belongsToAnotherGroup(television)">
+          <input
+            type="checkbox"
+            [checked]="isSelected(television.id)"
+            [disabled]="belongsToAnotherGroup(television)"
+            (change)="toggleTelevision(television, $any($event.target).checked)"
+          />
+          <span>
+            <strong>{{ television.name }}</strong>
+            @if (belongsToAnotherGroup(television)) {
+              <small>Уже находится в группе «{{ groupName(television.groupId) }}»</small>
+            } @else {
+              <small>{{
+                television.broadcastEnabled === false ? 'Трансляция выключена' : 'Доступен'
+              }}</small>
+            }
+          </span>
+        </label>
+      } @empty {
+        <p class="empty-picker">Сначала подключите хотя бы один телевизор.</p>
+      }
+    </div>
+  </ng-container>
+</nz-modal>

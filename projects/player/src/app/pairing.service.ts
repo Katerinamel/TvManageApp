@@ -10,6 +10,7 @@ import {
   serverTimestamp,
   setDoc,
 } from '@angular/fire/firestore';
+import type { ContentListItem, PlaylistSummary } from 'shared';
 
 type PlayerState = 'loading' | 'pending' | 'paired' | 'error';
 
@@ -39,16 +40,16 @@ function youtubeIdFromUrl(sourceUrl: string): string | null {
   }
 }
 
-export interface PlayerContentItem {
-  id: string;
-  name: string;
-  type: 'image' | 'video' | 'youtube';
-  sourceUrl: string;
-  youtubeVideoId?: string;
-  order: number;
-  durationSeconds?: number;
-  state: 'draft' | 'published';
-  playlistId?: string;
+export type PlayerContentItem = ContentListItem;
+
+export function playerContentPath(
+  televisionId: string,
+  playlistId: string,
+  libraryMode: boolean,
+): string {
+  return libraryMode
+    ? `playlists/${playlistId}/contentItems`
+    : `televisions/${televisionId}/contentItems`;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -58,9 +59,12 @@ export class PairingService implements OnDestroy {
   private unsubscribe?: () => void;
   private unsubscribeContent?: () => void;
   private unsubscribeTelevision?: () => void;
+  private unsubscribePlaylist?: () => void;
   private watchedTelevisionId?: string;
+  private watchedContentPath?: string;
   private allContentItems: PlayerContentItem[] = [];
   private currentPlaylistId = 'default';
+  private libraryMode = false;
 
   readonly code = signal('');
   readonly state = signal<PlayerState>('loading');
@@ -103,7 +107,9 @@ export class PairingService implements OnDestroy {
         },
         (error) => {
           console.error('Pairing listener failed', error);
-          this.errorMessage.set('Связь с Firebase прервана. Обновите страницу через несколько секунд.');
+          this.errorMessage.set(
+            'Связь с Firebase прервана. Обновите страницу через несколько секунд.',
+          );
           this.state.set('error');
         },
       );
@@ -133,7 +139,9 @@ export class PairingService implements OnDestroy {
       this.state.set('pending');
     } catch (error) {
       console.error('Unable to start pairing', error);
-      this.errorMessage.set('Не удалось подключиться к Firebase. Проверьте интернет и обновите страницу.');
+      this.errorMessage.set(
+        'Не удалось подключиться к Firebase. Проверьте интернет и обновите страницу.',
+      );
       this.state.set('error');
     }
   }
@@ -142,6 +150,7 @@ export class PairingService implements OnDestroy {
     this.unsubscribe?.();
     this.unsubscribeContent?.();
     this.unsubscribeTelevision?.();
+    this.unsubscribePlaylist?.();
   }
 
   private watchContent(televisionId: string): void {
@@ -155,41 +164,73 @@ export class PairingService implements OnDestroy {
         const television = snapshot.data() as
           | {
               activePlaylistId?: string;
+              libraryActivePlaylistId?: string;
+              playlistSchemaVersion?: number;
               broadcastEnabled?: boolean;
-              playlists?: Array<{ id: string; name: string }>;
+              playlists?: PlaylistSummary[];
             }
           | undefined;
-        this.currentPlaylistId = television?.activePlaylistId ?? 'default';
+        this.libraryMode =
+          (television?.playlistSchemaVersion ?? 0) >= 2 && !!television?.libraryActivePlaylistId;
+        this.currentPlaylistId = this.libraryMode
+          ? (television?.libraryActivePlaylistId ?? 'default')
+          : (television?.activePlaylistId ?? 'default');
         this.broadcastEnabled.set(television?.broadcastEnabled ?? true);
-        this.activePlaylistName.set(
-          television?.playlists?.find((playlist) => playlist.id === this.currentPlaylistId)?.name ??
-            'Основной',
-        );
-        this.applyActivePlaylist();
+        if (this.libraryMode) {
+          this.watchPlaylistName(this.currentPlaylistId);
+        } else {
+          this.unsubscribePlaylist?.();
+          this.unsubscribePlaylist = undefined;
+          this.activePlaylistName.set(
+            television?.playlists?.find((playlist) => playlist.id === this.currentPlaylistId)
+              ?.name ?? 'Основной',
+          );
+        }
+        this.watchPlaylistContent(televisionId);
       },
       (error) => {
         console.error('Television listener failed', error);
         this.contentError.set('Не удалось получить настройки трансляции.');
       },
     );
+  }
+
+  private watchPlaylistContent(televisionId: string): void {
+    const path = playerContentPath(televisionId, this.currentPlaylistId, this.libraryMode);
+    if (this.watchedContentPath === path) {
+      this.applyActivePlaylist();
+      return;
+    }
+    this.watchedContentPath = path;
+    this.unsubscribeContent?.();
+    this.allContentItems = [];
+    this.applyActivePlaylist();
     this.unsubscribeContent = onSnapshot(
-      collection(this.firestore, `televisions/${televisionId}/contentItems`),
+      collection(this.firestore, path),
       (snapshot) => {
         this.contentError.set('');
-        this.allContentItems = snapshot.docs
-            .map((item) => {
-              const content = { id: item.id, ...item.data() } as PlayerContentItem;
-              const youtubeVideoId = content.youtubeVideoId ?? youtubeIdFromUrl(content.sourceUrl);
-              return youtubeVideoId
-                ? { ...content, type: 'youtube' as const, youtubeVideoId }
-                : content;
-            });
+        this.allContentItems = snapshot.docs.map((item) => {
+          const content = { id: item.id, ...item.data() } as PlayerContentItem;
+          const youtubeVideoId = content.youtubeVideoId ?? youtubeIdFromUrl(content.sourceUrl);
+          return youtubeVideoId
+            ? { ...content, type: 'youtube' as const, youtubeVideoId }
+            : content;
+        });
         this.applyActivePlaylist();
       },
       (error) => {
         console.error('Content listener failed', error);
         this.contentError.set('Не удалось получить опубликованный контент.');
       },
+    );
+  }
+
+  private watchPlaylistName(playlistId: string): void {
+    this.unsubscribePlaylist?.();
+    this.unsubscribePlaylist = onSnapshot(
+      doc(this.firestore, `playlists/${playlistId}`),
+      (snapshot) => this.activePlaylistName.set(String(snapshot.data()?.['name'] ?? 'Плейлист')),
+      () => this.activePlaylistName.set('Плейлист'),
     );
   }
 
@@ -203,7 +244,8 @@ export class PairingService implements OnDestroy {
         .filter(
           (item) =>
             item.state === 'published' &&
-            (item.playlistId === this.currentPlaylistId ||
+            (this.libraryMode ||
+              item.playlistId === this.currentPlaylistId ||
               (!item.playlistId && this.currentPlaylistId === 'default')),
         )
         .sort((a, b) => a.order - b.order),
@@ -215,7 +257,11 @@ export class PairingService implements OnDestroy {
     this.unsubscribeContent = undefined;
     this.unsubscribeTelevision?.();
     this.unsubscribeTelevision = undefined;
+    this.unsubscribePlaylist?.();
+    this.unsubscribePlaylist = undefined;
     this.watchedTelevisionId = undefined;
+    this.watchedContentPath = undefined;
+    this.libraryMode = false;
     this.allContentItems = [];
     this.televisionId.set(null);
     this.contentItems.set([]);
