@@ -64,6 +64,11 @@
             <p class="empty-members">Добавьте телевизоры в эту группу.</p>
           }
 
+          <div class="shared-playlist">
+            <span>Общий плейлист</span>
+            <strong>{{ playlistName(group.activePlaylistId) }}</strong>
+          </div>
+
           <div class="group-actions">
             <button nz-button (click)="openGroup(group)">Настроить</button>
             <button
@@ -131,5 +136,21 @@
         <p class="empty-picker">Сначала подключите хотя бы один телевизор.</p>
       }
     </div>
+
+    <label class="field-label playlist-label" for="group-playlist">Общий плейлист</label>
+    <select
+      id="group-playlist"
+      class="playlist-select"
+      [ngModel]="selectedPlaylistId()"
+      (ngModelChange)="selectedPlaylistId.set($event)"
+    >
+      <option value="">Не назначен</option>
+      @for (playlist of playlists(); track playlist.id) {
+        <option [value]="playlist.id">{{ playlist.name }}</option>
+      }
+    </select>
+    <p class="playlist-hint">
+      После сохранения выбранный плейлист включится на всех телевизорах группы.
+    </p>
   </ng-container>
 </nz-modal>

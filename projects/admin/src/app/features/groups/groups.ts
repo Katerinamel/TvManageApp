@@ -23,10 +23,12 @@ export class Groups {
   protected readonly groupsError = this.groupAdmin.error;
   protected readonly televisions = this.televisionAdmin.televisions;
   protected readonly televisionsLoading = this.televisionAdmin.loading;
+  protected readonly playlists = this.groupAdmin.playlists;
   protected readonly newGroupName = signal('');
   protected readonly activeGroup = signal<TelevisionGroup | null>(null);
   protected readonly editName = signal('');
   protected readonly selectedTelevisionIds = signal<string[]>([]);
+  protected readonly selectedPlaylistId = signal('');
   protected readonly modalVisible = signal(false);
   protected readonly busy = signal(false);
   protected readonly message = signal('');
@@ -56,6 +58,7 @@ export class Groups {
         .filter((television) => television.groupId === group.id)
         .map((television) => television.id),
     );
+    this.selectedPlaylistId.set(group.activePlaylistId ?? '');
     this.modalVisible.set(true);
     this.message.set('');
   }
@@ -77,6 +80,11 @@ export class Groups {
         this.selectedTelevisionIds(),
         this.televisions(),
       );
+      if (this.selectedPlaylistId()) {
+        await this.groupAdmin.assignPlaylist(group, this.selectedPlaylistId(), this.televisions());
+      } else if (group.activePlaylistId) {
+        await this.groupAdmin.clearPlaylist(group, this.televisions());
+      }
       this.modalVisible.set(false);
       this.activeGroup.set(null);
       this.message.set('Настройки группы сохранены.');
@@ -106,6 +114,10 @@ export class Groups {
 
   protected members(group: TelevisionGroup): TelevisionListItem[] {
     return this.televisions().filter((television) => television.groupId === group.id);
+  }
+
+  protected playlistName(playlistId: string | undefined): string {
+    return this.playlists().find((playlist) => playlist.id === playlistId)?.name ?? 'Не назначен';
   }
 
   protected async deleteGroup(group: TelevisionGroup): Promise<void> {

@@ -8,7 +8,7 @@ import {
   serverTimestamp,
   writeBatch,
 } from '@angular/fire/firestore';
-import type { TelevisionGroup, TelevisionListItem } from 'shared';
+import type { Playlist, TelevisionGroup, TelevisionListItem } from 'shared';
 import { TelevisionAdminService } from '../televisions/television-admin.service';
 
 export function canAssignTelevisionToGroup(
@@ -26,6 +26,7 @@ export class GroupAdminService {
   readonly groups = signal<TelevisionGroup[]>([]);
   readonly loading = signal(true);
   readonly error = signal('');
+  readonly playlists = signal<Playlist[]>([]);
 
   constructor() {
     void this.refresh();
@@ -35,10 +36,18 @@ export class GroupAdminService {
     this.loading.set(true);
     this.error.set('');
     try {
-      const snapshot = await getDocs(collection(this.firestore, 'groups'));
+      const [snapshot, playlistSnapshot] = await Promise.all([
+        getDocs(collection(this.firestore, 'groups')),
+        getDocs(collection(this.firestore, 'playlists')),
+      ]);
       this.groups.set(
         snapshot.docs
           .map((item) => ({ id: item.id, ...item.data() }) as TelevisionGroup)
+          .sort((a, b) => a.name.localeCompare(b.name, 'ru')),
+      );
+      this.playlists.set(
+        playlistSnapshot.docs
+          .map((item) => ({ id: item.id, ...item.data() }) as Playlist)
           .sort((a, b) => a.name.localeCompare(b.name, 'ru')),
       );
     } catch (error) {
@@ -92,12 +101,14 @@ export class GroupAdminService {
       .forEach((television) =>
         batch.update(doc(this.firestore, `televisions/${television.id}`), {
           groupId: deleteField(),
+          ...(group.activePlaylistId ? { libraryActivePlaylistId: deleteField() } : {}),
           updatedAt: serverTimestamp(),
         }),
       );
     selectedTelevisions.forEach((television) =>
       batch.update(doc(this.firestore, `televisions/${television.id}`), {
         groupId: group.id,
+        ...(group.activePlaylistId ? { libraryActivePlaylistId: group.activePlaylistId } : {}),
         updatedAt: serverTimestamp(),
       }),
     );
@@ -107,6 +118,53 @@ export class GroupAdminService {
       deviceIds: selectedTelevisions.map((television) => television.deviceId),
       updatedAt: serverTimestamp(),
     });
+    await batch.commit();
+    await Promise.all([this.refresh(), this.televisions.refresh()]);
+  }
+
+  async assignPlaylist(
+    group: TelevisionGroup,
+    playlistId: string,
+    allTelevisions: TelevisionListItem[],
+  ): Promise<void> {
+    const playlist = this.playlists().find((item) => item.id === playlistId);
+    if (!playlist) throw new Error('PLAYLIST_NOT_FOUND');
+    const members = allTelevisions.filter((television) => television.groupId === group.id);
+    const batch = writeBatch(this.firestore);
+    batch.update(doc(this.firestore, `groups/${group.id}`), {
+      activePlaylistId: playlistId,
+      updatedAt: serverTimestamp(),
+    });
+    batch.update(doc(this.firestore, `playlists/${playlistId}`), {
+      ownerType: 'group',
+      ownerId: group.id,
+      assignedTelevisionIds: members.map((television) => television.id),
+      viewerDeviceIds: members.map((television) => television.deviceId),
+      updatedAt: serverTimestamp(),
+    });
+    members.forEach((television) =>
+      batch.update(doc(this.firestore, `televisions/${television.id}`), {
+        libraryActivePlaylistId: playlistId,
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    await batch.commit();
+    await Promise.all([this.refresh(), this.televisions.refresh()]);
+  }
+
+  async clearPlaylist(group: TelevisionGroup, allTelevisions: TelevisionListItem[]): Promise<void> {
+    const members = allTelevisions.filter((television) => television.groupId === group.id);
+    const batch = writeBatch(this.firestore);
+    batch.update(doc(this.firestore, `groups/${group.id}`), {
+      activePlaylistId: deleteField(),
+      updatedAt: serverTimestamp(),
+    });
+    members.forEach((television) =>
+      batch.update(doc(this.firestore, `televisions/${television.id}`), {
+        libraryActivePlaylistId: deleteField(),
+        updatedAt: serverTimestamp(),
+      }),
+    );
     await batch.commit();
     await Promise.all([this.refresh(), this.televisions.refresh()]);
   }
